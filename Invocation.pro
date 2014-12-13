@@ -3,12 +3,10 @@ CONFIG += console
 CONFIG -= app_bundle
 CONFIG -= qt
 
-SOURCES += main.cpp \
+SOURCES += \
     FunctionInvoker.cpp \
     Invocable.cpp \
     InvocationTest.cpp \
-    SaveInvocation.cpp \
-    StrategyInvocationHelpers.cpp \
     StreamOperatorOverloads.cpp
 
 include(deployment.pri)
@@ -20,6 +18,5 @@ HEADERS += \
     InvokerHelperDefines.h \
     MethodInvoker.h \
     RepeatDefines.h \
-    SaveInvocation.h \
     StrategyInvocationHelpers.h
 

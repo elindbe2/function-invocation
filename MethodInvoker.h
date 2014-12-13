@@ -3,10 +3,10 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <memory>
 
 #include "InvokerHelperDefines.h"
 #include "FunctionInvoker.h"
-#include <memory>
 
 #define INVOCABLE_METHOD( methodname, nargs ) AddInvocation( #methodname, make_shared<Invocation::MethodInvoker##nargs##<decltype(&methodname)>>(*this, &methodname));
 
@@ -92,12 +92,7 @@ template<typename K, typename R , typename T1> struct MethodInvoker1<R(K::*)(T1)
     get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
     ret = ((*kp).*fn)( t1 );
     cleanUp<T1>(t1);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -136,12 +131,7 @@ template<typename K, typename R , typename T1, typename T2> struct MethodInvoker
     ret = ((*kp).*fn)( t1, t2 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -184,12 +174,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3> struct 
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
     cleanUp<T3>(t3);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -236,12 +221,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T2>(t2);
     cleanUp<T3>(t3);
     cleanUp<T4>(t4);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -292,12 +272,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T3>(t3);
     cleanUp<T4>(t4);
     cleanUp<T5>(t5);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -352,12 +327,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T4>(t4);
     cleanUp<T5>(t5);
     cleanUp<T6>(t6);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -416,12 +386,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T5>(t5);
     cleanUp<T6>(t6);
     cleanUp<T7>(t7);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -484,12 +449,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T6>(t6);
     cleanUp<T7>(t7);
     cleanUp<T8>(t8);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -556,12 +516,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T7>(t7);
     cleanUp<T8>(t8);
     cleanUp<T9>(t9);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -632,12 +587,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T8>(t8);
     cleanUp<T9>(t9);
     cleanUp<T10>(t10);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -712,12 +662,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T9>(t9);
     cleanUp<T10>(t10);
     cleanUp<T11>(t11);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -796,12 +741,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T10>(t10);
     cleanUp<T11>(t11);
     cleanUp<T12>(t12);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -884,12 +824,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T11>(t11);
     cleanUp<T12>(t12);
     cleanUp<T13>(t13);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -976,12 +911,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T12>(t12);
     cleanUp<T13>(t13);
     cleanUp<T14>(t14);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -1072,12 +1002,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T13>(t13);
     cleanUp<T14>(t14);
     cleanUp<T15>(t15);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -1172,12 +1097,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T14>(t14);
     cleanUp<T15>(t15);
     cleanUp<T16>(t16);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -1276,12 +1196,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T15>(t15);
     cleanUp<T16>(t16);
     cleanUp<T17>(t17);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -1384,12 +1299,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T16>(t16);
     cleanUp<T17>(t17);
     cleanUp<T18>(t18);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -1496,12 +1406,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T17>(t17);
     cleanUp<T18>(t18);
     cleanUp<T19>(t19);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -1612,12 +1517,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T18>(t18);
     cleanUp<T19>(t19);
     cleanUp<T20>(t20);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -1732,12 +1632,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T19>(t19);
     cleanUp<T20>(t20);
     cleanUp<T21>(t21);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -1856,12 +1751,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T20>(t20);
     cleanUp<T21>(t21);
     cleanUp<T22>(t22);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -1984,12 +1874,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T21>(t21);
     cleanUp<T22>(t22);
     cleanUp<T23>(t23);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -2116,12 +2001,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T22>(t22);
     cleanUp<T23>(t23);
     cleanUp<T24>(t24);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -2252,12 +2132,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T23>(t23);
     cleanUp<T24>(t24);
     cleanUp<T25>(t25);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -2392,12 +2267,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T24>(t24);
     cleanUp<T25>(t25);
     cleanUp<T26>(t26);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -2536,12 +2406,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T25>(t25);
     cleanUp<T26>(t26);
     cleanUp<T27>(t27);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
@@ -2684,12 +2549,7 @@ template<typename K, typename R , typename T1, typename T2, typename T3, typenam
     cleanUp<T26>(t26);
     cleanUp<T27>(t27);
     cleanUp<T28>(t28);
-    std::string ret_str("");
-    {
-        std::stringstream ss;
-        ss << ret;
-        ret_str.append(ss.str());
-    }
+    std::string ret_str = toString<R>(ret);
     return ret_str;
 }
 };
