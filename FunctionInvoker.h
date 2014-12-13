@@ -4,6 +4,7 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <exception>
 #include "InvokerHelperDefines.h"
 #include "RepeatDefines.h"
 
@@ -11,74 +12,79 @@
 
 namespace Invocation
 {
-	using namespace std;
+    using namespace std;
 
-	struct FunctionInvoker
-	{
-		void* untyped_ret;
-		virtual std::string Invoke( vector<string> s ) = 0;
-		virtual ~FunctionInvoker(){}
-	};
-	
-	typedef map<string, shared_ptr<FunctionInvoker>> FunctionInvocationMap;
+    struct wrong_number_of_parameters : std::exception
+    {
+        const char* what() const noexcept { return "FunctionInvoker: Wrong number of parameters!"; }
+    };
 
-	template<typename F> 
-	struct FunctionInvoker0;
+    struct FunctionInvoker
+    {
+        void* untyped_ret;
+        virtual std::string Invoke( vector<string> s ) = 0;
+        virtual ~FunctionInvoker(){}
+    };
 
-	template<typename R > 
-	struct FunctionInvoker0<R(*)( )> : public FunctionInvoker0<R( )>
-	{};
+    typedef map<string, shared_ptr<FunctionInvoker>> FunctionInvocationMap;
+
+    template<typename F>
+    struct FunctionInvoker0;
+
+    template<typename R >
+    struct FunctionInvoker0<R(*)( )> : public FunctionInvoker0<R( )>
+    {};
 
 
-	template<typename R > 
-	struct FunctionInvoker0<R( )>
-		: public FunctionInvoker
-	{
-		typedef R(*tFnPtr)(void);
-		R ret;
+    template<typename R >
+    struct FunctionInvoker0<R( )>
+        : public FunctionInvoker
+    {
+        typedef R(*tFnPtr)(void);
+        R ret;
 
-		tFnPtr fn;
+        tFnPtr fn;
 
-		FunctionInvoker0( tFnPtr f )
-			: fn(f)
-		{
-			untyped_ret = (void*) &ret;
-		}
+        FunctionInvoker0( tFnPtr f )
+            : fn(f)
+        {
+            untyped_ret = (void*) &ret;
+        }
 
-		std::string Invoke( std::vector<string> s )
-		{
-			if(s.size() != 0)
-				throw exception( "FunctionInvoker: Wrong number of parameters!" );
-			ret = fn(   );
+        std::string Invoke( std::vector<string> s )
+        {
+            if(s.size() != 0)
+                throw wrong_number_of_parameters();
+            ret = fn(   );
 
-			std::string ret_str = toString<R>(ret);
-			return ret_str;
-		}
-	};
+            std::string ret_str = toString<R>(ret);
+            return ret_str;
+        }
+    };
 
-	template< > 
-	struct FunctionInvoker0<void( )>
-		: public FunctionInvoker
-	{
-		typedef void(*tFnPtr)(void);
-		function<void( )> fn;
+    template< >
+    struct FunctionInvoker0<void( )>
+        : public FunctionInvoker
+    {
+        typedef void(*tFnPtr)(void);
+        function<void( )> fn;
 
-		FunctionInvoker0( tFnPtr f )
-			: fn(f)
-		{
-			untyped_ret = NULL;
-		}
+        FunctionInvoker0( tFnPtr f )
+            : fn(f)
+        {
+            untyped_ret = NULL;
+        }
 
-		std::string Invoke( std::vector<string> s )
-		{
-			if(s.size() != 0)
-				throw exception( "FunctionInvoker: Wrong number of parameters!" );
-			fn(   );
-			return "";
-		}
-	};
+        std::string Invoke( std::vector<string> s )
+        {
+            if(s.size() != 0)
+                throw wrong_number_of_parameters();
+            fn(   );
+            return "";
+        }
+    };
 
-template<typename F> struct FunctionInvstd::string ret_str = toString<R>(ret);oker1;
+template<typename F> struct FunctionInvoker1;
 template<typename R , typename T1> struct FunctionInvoker1<R(*)(T1)> : public FunctionInvoker1<R(T1)> {};
 template<typename R, typename T1> struct FunctionInvoker1<R(T1)> : public FunctionInvoker
 {
@@ -90,8 +96,8 @@ template<typename R, typename T1> struct FunctionInvoker1<R(T1)> : public Functi
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=1) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
+    if(s.size() !=1) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
     ret = fn( t1 );
     cleanUp<T1>(t1);
     std::string ret_str = toString<R>(ret);
@@ -107,8 +113,8 @@ template<typename T1> struct FunctionInvoker1<void(T1)> : public FunctionInvoker
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=1) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
+    if(s.size() !=1) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
     fn( t1 );
     cleanUp<T1>(t1);
     return "";
@@ -126,9 +132,9 @@ template<typename R, typename T1, typename T2> struct FunctionInvoker2<R(T1, T2)
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=2) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
+    if(s.size() !=2) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
     ret = fn( t1, t2 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -145,9 +151,9 @@ template<typename T1, typename T2> struct FunctionInvoker2<void(T1, T2)> : publi
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=2) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
+    if(s.size() !=2) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
     fn( t1, t2 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -166,10 +172,10 @@ template<typename R, typename T1, typename T2, typename T3> struct FunctionInvok
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=3) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
+    if(s.size() !=3) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
     ret = fn( t1, t2, t3 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -187,10 +193,10 @@ template<typename T1, typename T2, typename T3> struct FunctionInvoker3<void(T1,
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=3) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
+    if(s.size() !=3) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
     fn( t1, t2, t3 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -210,11 +216,11 @@ template<typename R, typename T1, typename T2, typename T3, typename T4> struct 
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=4) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
+    if(s.size() !=4) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
     ret = fn( t1, t2, t3, t4 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -233,11 +239,11 @@ template<typename T1, typename T2, typename T3, typename T4> struct FunctionInvo
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=4) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
+    if(s.size() !=4) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
     fn( t1, t2, t3, t4 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -258,12 +264,12 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=5) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
+    if(s.size() !=5) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
     ret = fn( t1, t2, t3, t4, t5 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -283,12 +289,12 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5> struct
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=5) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
+    if(s.size() !=5) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
     fn( t1, t2, t3, t4, t5 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -310,13 +316,13 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=6) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
+    if(s.size() !=6) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
     ret = fn( t1, t2, t3, t4, t5, t6 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -337,13 +343,13 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=6) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
+    if(s.size() !=6) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
     fn( t1, t2, t3, t4, t5, t6 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -366,14 +372,14 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=7) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
+    if(s.size() !=7) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -395,14 +401,14 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=7) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
+    if(s.size() !=7) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
     fn( t1, t2, t3, t4, t5, t6, t7 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -426,15 +432,15 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=8) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
+    if(s.size() !=8) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -457,15 +463,15 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=8) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
+    if(s.size() !=8) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -490,16 +496,16 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=9) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
+    if(s.size() !=9) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8, t9 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -523,16 +529,16 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=9) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
+    if(s.size() !=9) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8, t9 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -558,17 +564,17 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=10) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
+    if(s.size() !=10) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -593,17 +599,17 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=10) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
+    if(s.size() !=10) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -630,18 +636,18 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=11) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
+    if(s.size() !=11) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -667,18 +673,18 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=11) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
+    if(s.size() !=11) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -706,19 +712,19 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=12) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
+    if(s.size() !=12) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -745,19 +751,19 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=12) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
+    if(s.size() !=12) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -786,20 +792,20 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=13) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
+    if(s.size() !=13) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -827,20 +833,20 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=13) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
+    if(s.size() !=13) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -870,21 +876,21 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=14) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
+    if(s.size() !=14) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -913,21 +919,21 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=14) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
+    if(s.size() !=14) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -958,22 +964,22 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=15) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
+    if(s.size() !=15) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -1003,22 +1009,22 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=15) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
+    if(s.size() !=15) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -1050,23 +1056,23 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=16) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
+    if(s.size() !=16) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -1097,23 +1103,23 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=16) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
+    if(s.size() !=16) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -1146,24 +1152,24 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=17) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
+    if(s.size() !=17) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -1195,24 +1201,24 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=17) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
+    if(s.size() !=17) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -1246,25 +1252,25 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=18) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
+    if(s.size() !=18) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -1297,25 +1303,25 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=18) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
+    if(s.size() !=18) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -1350,26 +1356,26 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=19) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
-    get_param_type<T19>::type t19 = createFromString<get_param_type<T19>::type>(s[19-1]);
+    if(s.size() !=19) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
+    typename get_param_type<T19>::type t19 = createFromString<typename get_param_type<T19>::type>(s[19-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -1403,26 +1409,26 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=19) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
-    get_param_type<T19>::type t19 = createFromString<get_param_type<T19>::type>(s[19-1]);
+    if(s.size() !=19) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
+    typename get_param_type<T19>::type t19 = createFromString<typename get_param_type<T19>::type>(s[19-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -1458,27 +1464,27 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=20) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
-    get_param_type<T19>::type t19 = createFromString<get_param_type<T19>::type>(s[19-1]);
-    get_param_type<T20>::type t20 = createFromString<get_param_type<T20>::type>(s[20-1]);
+    if(s.size() !=20) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
+    typename get_param_type<T19>::type t19 = createFromString<typename get_param_type<T19>::type>(s[19-1]);
+    typename get_param_type<T20>::type t20 = createFromString<typename get_param_type<T20>::type>(s[20-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -1513,27 +1519,27 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=20) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
-    get_param_type<T19>::type t19 = createFromString<get_param_type<T19>::type>(s[19-1]);
-    get_param_type<T20>::type t20 = createFromString<get_param_type<T20>::type>(s[20-1]);
+    if(s.size() !=20) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
+    typename get_param_type<T19>::type t19 = createFromString<typename get_param_type<T19>::type>(s[19-1]);
+    typename get_param_type<T20>::type t20 = createFromString<typename get_param_type<T20>::type>(s[20-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -1570,28 +1576,28 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=21) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
-    get_param_type<T19>::type t19 = createFromString<get_param_type<T19>::type>(s[19-1]);
-    get_param_type<T20>::type t20 = createFromString<get_param_type<T20>::type>(s[20-1]);
-    get_param_type<T21>::type t21 = createFromString<get_param_type<T21>::type>(s[21-1]);
+    if(s.size() !=21) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
+    typename get_param_type<T19>::type t19 = createFromString<typename get_param_type<T19>::type>(s[19-1]);
+    typename get_param_type<T20>::type t20 = createFromString<typename get_param_type<T20>::type>(s[20-1]);
+    typename get_param_type<T21>::type t21 = createFromString<typename get_param_type<T21>::type>(s[21-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -1627,28 +1633,28 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=21) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
-    get_param_type<T19>::type t19 = createFromString<get_param_type<T19>::type>(s[19-1]);
-    get_param_type<T20>::type t20 = createFromString<get_param_type<T20>::type>(s[20-1]);
-    get_param_type<T21>::type t21 = createFromString<get_param_type<T21>::type>(s[21-1]);
+    if(s.size() !=21) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
+    typename get_param_type<T19>::type t19 = createFromString<typename get_param_type<T19>::type>(s[19-1]);
+    typename get_param_type<T20>::type t20 = createFromString<typename get_param_type<T20>::type>(s[20-1]);
+    typename get_param_type<T21>::type t21 = createFromString<typename get_param_type<T21>::type>(s[21-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -1686,29 +1692,29 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=22) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
-    get_param_type<T19>::type t19 = createFromString<get_param_type<T19>::type>(s[19-1]);
-    get_param_type<T20>::type t20 = createFromString<get_param_type<T20>::type>(s[20-1]);
-    get_param_type<T21>::type t21 = createFromString<get_param_type<T21>::type>(s[21-1]);
-    get_param_type<T22>::type t22 = createFromString<get_param_type<T22>::type>(s[22-1]);
+    if(s.size() !=22) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
+    typename get_param_type<T19>::type t19 = createFromString<typename get_param_type<T19>::type>(s[19-1]);
+    typename get_param_type<T20>::type t20 = createFromString<typename get_param_type<T20>::type>(s[20-1]);
+    typename get_param_type<T21>::type t21 = createFromString<typename get_param_type<T21>::type>(s[21-1]);
+    typename get_param_type<T22>::type t22 = createFromString<typename get_param_type<T22>::type>(s[22-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -1745,29 +1751,29 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=22) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
-    get_param_type<T19>::type t19 = createFromString<get_param_type<T19>::type>(s[19-1]);
-    get_param_type<T20>::type t20 = createFromString<get_param_type<T20>::type>(s[20-1]);
-    get_param_type<T21>::type t21 = createFromString<get_param_type<T21>::type>(s[21-1]);
-    get_param_type<T22>::type t22 = createFromString<get_param_type<T22>::type>(s[22-1]);
+    if(s.size() !=22) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
+    typename get_param_type<T19>::type t19 = createFromString<typename get_param_type<T19>::type>(s[19-1]);
+    typename get_param_type<T20>::type t20 = createFromString<typename get_param_type<T20>::type>(s[20-1]);
+    typename get_param_type<T21>::type t21 = createFromString<typename get_param_type<T21>::type>(s[21-1]);
+    typename get_param_type<T22>::type t22 = createFromString<typename get_param_type<T22>::type>(s[22-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -1806,30 +1812,30 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=23) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
-    get_param_type<T19>::type t19 = createFromString<get_param_type<T19>::type>(s[19-1]);
-    get_param_type<T20>::type t20 = createFromString<get_param_type<T20>::type>(s[20-1]);
-    get_param_type<T21>::type t21 = createFromString<get_param_type<T21>::type>(s[21-1]);
-    get_param_type<T22>::type t22 = createFromString<get_param_type<T22>::type>(s[22-1]);
-    get_param_type<T23>::type t23 = createFromString<get_param_type<T23>::type>(s[23-1]);
+    if(s.size() !=23) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
+    typename get_param_type<T19>::type t19 = createFromString<typename get_param_type<T19>::type>(s[19-1]);
+    typename get_param_type<T20>::type t20 = createFromString<typename get_param_type<T20>::type>(s[20-1]);
+    typename get_param_type<T21>::type t21 = createFromString<typename get_param_type<T21>::type>(s[21-1]);
+    typename get_param_type<T22>::type t22 = createFromString<typename get_param_type<T22>::type>(s[22-1]);
+    typename get_param_type<T23>::type t23 = createFromString<typename get_param_type<T23>::type>(s[23-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -1867,30 +1873,30 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=23) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
-    get_param_type<T19>::type t19 = createFromString<get_param_type<T19>::type>(s[19-1]);
-    get_param_type<T20>::type t20 = createFromString<get_param_type<T20>::type>(s[20-1]);
-    get_param_type<T21>::type t21 = createFromString<get_param_type<T21>::type>(s[21-1]);
-    get_param_type<T22>::type t22 = createFromString<get_param_type<T22>::type>(s[22-1]);
-    get_param_type<T23>::type t23 = createFromString<get_param_type<T23>::type>(s[23-1]);
+    if(s.size() !=23) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
+    typename get_param_type<T19>::type t19 = createFromString<typename get_param_type<T19>::type>(s[19-1]);
+    typename get_param_type<T20>::type t20 = createFromString<typename get_param_type<T20>::type>(s[20-1]);
+    typename get_param_type<T21>::type t21 = createFromString<typename get_param_type<T21>::type>(s[21-1]);
+    typename get_param_type<T22>::type t22 = createFromString<typename get_param_type<T22>::type>(s[22-1]);
+    typename get_param_type<T23>::type t23 = createFromString<typename get_param_type<T23>::type>(s[23-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -1930,31 +1936,31 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=24) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
-    get_param_type<T19>::type t19 = createFromString<get_param_type<T19>::type>(s[19-1]);
-    get_param_type<T20>::type t20 = createFromString<get_param_type<T20>::type>(s[20-1]);
-    get_param_type<T21>::type t21 = createFromString<get_param_type<T21>::type>(s[21-1]);
-    get_param_type<T22>::type t22 = createFromString<get_param_type<T22>::type>(s[22-1]);
-    get_param_type<T23>::type t23 = createFromString<get_param_type<T23>::type>(s[23-1]);
-    get_param_type<T24>::type t24 = createFromString<get_param_type<T24>::type>(s[24-1]);
+    if(s.size() !=24) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
+    typename get_param_type<T19>::type t19 = createFromString<typename get_param_type<T19>::type>(s[19-1]);
+    typename get_param_type<T20>::type t20 = createFromString<typename get_param_type<T20>::type>(s[20-1]);
+    typename get_param_type<T21>::type t21 = createFromString<typename get_param_type<T21>::type>(s[21-1]);
+    typename get_param_type<T22>::type t22 = createFromString<typename get_param_type<T22>::type>(s[22-1]);
+    typename get_param_type<T23>::type t23 = createFromString<typename get_param_type<T23>::type>(s[23-1]);
+    typename get_param_type<T24>::type t24 = createFromString<typename get_param_type<T24>::type>(s[24-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -1993,31 +1999,31 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=24) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
-    get_param_type<T19>::type t19 = createFromString<get_param_type<T19>::type>(s[19-1]);
-    get_param_type<T20>::type t20 = createFromString<get_param_type<T20>::type>(s[20-1]);
-    get_param_type<T21>::type t21 = createFromString<get_param_type<T21>::type>(s[21-1]);
-    get_param_type<T22>::type t22 = createFromString<get_param_type<T22>::type>(s[22-1]);
-    get_param_type<T23>::type t23 = createFromString<get_param_type<T23>::type>(s[23-1]);
-    get_param_type<T24>::type t24 = createFromString<get_param_type<T24>::type>(s[24-1]);
+    if(s.size() !=24) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
+    typename get_param_type<T19>::type t19 = createFromString<typename get_param_type<T19>::type>(s[19-1]);
+    typename get_param_type<T20>::type t20 = createFromString<typename get_param_type<T20>::type>(s[20-1]);
+    typename get_param_type<T21>::type t21 = createFromString<typename get_param_type<T21>::type>(s[21-1]);
+    typename get_param_type<T22>::type t22 = createFromString<typename get_param_type<T22>::type>(s[22-1]);
+    typename get_param_type<T23>::type t23 = createFromString<typename get_param_type<T23>::type>(s[23-1]);
+    typename get_param_type<T24>::type t24 = createFromString<typename get_param_type<T24>::type>(s[24-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -2058,32 +2064,32 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=25) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
-    get_param_type<T19>::type t19 = createFromString<get_param_type<T19>::type>(s[19-1]);
-    get_param_type<T20>::type t20 = createFromString<get_param_type<T20>::type>(s[20-1]);
-    get_param_type<T21>::type t21 = createFromString<get_param_type<T21>::type>(s[21-1]);
-    get_param_type<T22>::type t22 = createFromString<get_param_type<T22>::type>(s[22-1]);
-    get_param_type<T23>::type t23 = createFromString<get_param_type<T23>::type>(s[23-1]);
-    get_param_type<T24>::type t24 = createFromString<get_param_type<T24>::type>(s[24-1]);
-    get_param_type<T25>::type t25 = createFromString<get_param_type<T25>::type>(s[25-1]);
+    if(s.size() !=25) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
+    typename get_param_type<T19>::type t19 = createFromString<typename get_param_type<T19>::type>(s[19-1]);
+    typename get_param_type<T20>::type t20 = createFromString<typename get_param_type<T20>::type>(s[20-1]);
+    typename get_param_type<T21>::type t21 = createFromString<typename get_param_type<T21>::type>(s[21-1]);
+    typename get_param_type<T22>::type t22 = createFromString<typename get_param_type<T22>::type>(s[22-1]);
+    typename get_param_type<T23>::type t23 = createFromString<typename get_param_type<T23>::type>(s[23-1]);
+    typename get_param_type<T24>::type t24 = createFromString<typename get_param_type<T24>::type>(s[24-1]);
+    typename get_param_type<T25>::type t25 = createFromString<typename get_param_type<T25>::type>(s[25-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -2123,32 +2129,32 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=25) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
-    get_param_type<T19>::type t19 = createFromString<get_param_type<T19>::type>(s[19-1]);
-    get_param_type<T20>::type t20 = createFromString<get_param_type<T20>::type>(s[20-1]);
-    get_param_type<T21>::type t21 = createFromString<get_param_type<T21>::type>(s[21-1]);
-    get_param_type<T22>::type t22 = createFromString<get_param_type<T22>::type>(s[22-1]);
-    get_param_type<T23>::type t23 = createFromString<get_param_type<T23>::type>(s[23-1]);
-    get_param_type<T24>::type t24 = createFromString<get_param_type<T24>::type>(s[24-1]);
-    get_param_type<T25>::type t25 = createFromString<get_param_type<T25>::type>(s[25-1]);
+    if(s.size() !=25) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
+    typename get_param_type<T19>::type t19 = createFromString<typename get_param_type<T19>::type>(s[19-1]);
+    typename get_param_type<T20>::type t20 = createFromString<typename get_param_type<T20>::type>(s[20-1]);
+    typename get_param_type<T21>::type t21 = createFromString<typename get_param_type<T21>::type>(s[21-1]);
+    typename get_param_type<T22>::type t22 = createFromString<typename get_param_type<T22>::type>(s[22-1]);
+    typename get_param_type<T23>::type t23 = createFromString<typename get_param_type<T23>::type>(s[23-1]);
+    typename get_param_type<T24>::type t24 = createFromString<typename get_param_type<T24>::type>(s[24-1]);
+    typename get_param_type<T25>::type t25 = createFromString<typename get_param_type<T25>::type>(s[25-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -2190,33 +2196,33 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=26) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
-    get_param_type<T19>::type t19 = createFromString<get_param_type<T19>::type>(s[19-1]);
-    get_param_type<T20>::type t20 = createFromString<get_param_type<T20>::type>(s[20-1]);
-    get_param_type<T21>::type t21 = createFromString<get_param_type<T21>::type>(s[21-1]);
-    get_param_type<T22>::type t22 = createFromString<get_param_type<T22>::type>(s[22-1]);
-    get_param_type<T23>::type t23 = createFromString<get_param_type<T23>::type>(s[23-1]);
-    get_param_type<T24>::type t24 = createFromString<get_param_type<T24>::type>(s[24-1]);
-    get_param_type<T25>::type t25 = createFromString<get_param_type<T25>::type>(s[25-1]);
-    get_param_type<T26>::type t26 = createFromString<get_param_type<T26>::type>(s[26-1]);
+    if(s.size() !=26) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
+    typename get_param_type<T19>::type t19 = createFromString<typename get_param_type<T19>::type>(s[19-1]);
+    typename get_param_type<T20>::type t20 = createFromString<typename get_param_type<T20>::type>(s[20-1]);
+    typename get_param_type<T21>::type t21 = createFromString<typename get_param_type<T21>::type>(s[21-1]);
+    typename get_param_type<T22>::type t22 = createFromString<typename get_param_type<T22>::type>(s[22-1]);
+    typename get_param_type<T23>::type t23 = createFromString<typename get_param_type<T23>::type>(s[23-1]);
+    typename get_param_type<T24>::type t24 = createFromString<typename get_param_type<T24>::type>(s[24-1]);
+    typename get_param_type<T25>::type t25 = createFromString<typename get_param_type<T25>::type>(s[25-1]);
+    typename get_param_type<T26>::type t26 = createFromString<typename get_param_type<T26>::type>(s[26-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25, t26 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -2257,33 +2263,33 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=26) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
-    get_param_type<T19>::type t19 = createFromString<get_param_type<T19>::type>(s[19-1]);
-    get_param_type<T20>::type t20 = createFromString<get_param_type<T20>::type>(s[20-1]);
-    get_param_type<T21>::type t21 = createFromString<get_param_type<T21>::type>(s[21-1]);
-    get_param_type<T22>::type t22 = createFromString<get_param_type<T22>::type>(s[22-1]);
-    get_param_type<T23>::type t23 = createFromString<get_param_type<T23>::type>(s[23-1]);
-    get_param_type<T24>::type t24 = createFromString<get_param_type<T24>::type>(s[24-1]);
-    get_param_type<T25>::type t25 = createFromString<get_param_type<T25>::type>(s[25-1]);
-    get_param_type<T26>::type t26 = createFromString<get_param_type<T26>::type>(s[26-1]);
+    if(s.size() !=26) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
+    typename get_param_type<T19>::type t19 = createFromString<typename get_param_type<T19>::type>(s[19-1]);
+    typename get_param_type<T20>::type t20 = createFromString<typename get_param_type<T20>::type>(s[20-1]);
+    typename get_param_type<T21>::type t21 = createFromString<typename get_param_type<T21>::type>(s[21-1]);
+    typename get_param_type<T22>::type t22 = createFromString<typename get_param_type<T22>::type>(s[22-1]);
+    typename get_param_type<T23>::type t23 = createFromString<typename get_param_type<T23>::type>(s[23-1]);
+    typename get_param_type<T24>::type t24 = createFromString<typename get_param_type<T24>::type>(s[24-1]);
+    typename get_param_type<T25>::type t25 = createFromString<typename get_param_type<T25>::type>(s[25-1]);
+    typename get_param_type<T26>::type t26 = createFromString<typename get_param_type<T26>::type>(s[26-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25, t26 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -2326,34 +2332,34 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=27) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
-    get_param_type<T19>::type t19 = createFromString<get_param_type<T19>::type>(s[19-1]);
-    get_param_type<T20>::type t20 = createFromString<get_param_type<T20>::type>(s[20-1]);
-    get_param_type<T21>::type t21 = createFromString<get_param_type<T21>::type>(s[21-1]);
-    get_param_type<T22>::type t22 = createFromString<get_param_type<T22>::type>(s[22-1]);
-    get_param_type<T23>::type t23 = createFromString<get_param_type<T23>::type>(s[23-1]);
-    get_param_type<T24>::type t24 = createFromString<get_param_type<T24>::type>(s[24-1]);
-    get_param_type<T25>::type t25 = createFromString<get_param_type<T25>::type>(s[25-1]);
-    get_param_type<T26>::type t26 = createFromString<get_param_type<T26>::type>(s[26-1]);
-    get_param_type<T27>::type t27 = createFromString<get_param_type<T27>::type>(s[27-1]);
+    if(s.size() !=27) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
+    typename get_param_type<T19>::type t19 = createFromString<typename get_param_type<T19>::type>(s[19-1]);
+    typename get_param_type<T20>::type t20 = createFromString<typename get_param_type<T20>::type>(s[20-1]);
+    typename get_param_type<T21>::type t21 = createFromString<typename get_param_type<T21>::type>(s[21-1]);
+    typename get_param_type<T22>::type t22 = createFromString<typename get_param_type<T22>::type>(s[22-1]);
+    typename get_param_type<T23>::type t23 = createFromString<typename get_param_type<T23>::type>(s[23-1]);
+    typename get_param_type<T24>::type t24 = createFromString<typename get_param_type<T24>::type>(s[24-1]);
+    typename get_param_type<T25>::type t25 = createFromString<typename get_param_type<T25>::type>(s[25-1]);
+    typename get_param_type<T26>::type t26 = createFromString<typename get_param_type<T26>::type>(s[26-1]);
+    typename get_param_type<T27>::type t27 = createFromString<typename get_param_type<T27>::type>(s[27-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25, t26, t27 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -2395,34 +2401,34 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=27) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
-    get_param_type<T19>::type t19 = createFromString<get_param_type<T19>::type>(s[19-1]);
-    get_param_type<T20>::type t20 = createFromString<get_param_type<T20>::type>(s[20-1]);
-    get_param_type<T21>::type t21 = createFromString<get_param_type<T21>::type>(s[21-1]);
-    get_param_type<T22>::type t22 = createFromString<get_param_type<T22>::type>(s[22-1]);
-    get_param_type<T23>::type t23 = createFromString<get_param_type<T23>::type>(s[23-1]);
-    get_param_type<T24>::type t24 = createFromString<get_param_type<T24>::type>(s[24-1]);
-    get_param_type<T25>::type t25 = createFromString<get_param_type<T25>::type>(s[25-1]);
-    get_param_type<T26>::type t26 = createFromString<get_param_type<T26>::type>(s[26-1]);
-    get_param_type<T27>::type t27 = createFromString<get_param_type<T27>::type>(s[27-1]);
+    if(s.size() !=27) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
+    typename get_param_type<T19>::type t19 = createFromString<typename get_param_type<T19>::type>(s[19-1]);
+    typename get_param_type<T20>::type t20 = createFromString<typename get_param_type<T20>::type>(s[20-1]);
+    typename get_param_type<T21>::type t21 = createFromString<typename get_param_type<T21>::type>(s[21-1]);
+    typename get_param_type<T22>::type t22 = createFromString<typename get_param_type<T22>::type>(s[22-1]);
+    typename get_param_type<T23>::type t23 = createFromString<typename get_param_type<T23>::type>(s[23-1]);
+    typename get_param_type<T24>::type t24 = createFromString<typename get_param_type<T24>::type>(s[24-1]);
+    typename get_param_type<T25>::type t25 = createFromString<typename get_param_type<T25>::type>(s[25-1]);
+    typename get_param_type<T26>::type t26 = createFromString<typename get_param_type<T26>::type>(s[26-1]);
+    typename get_param_type<T27>::type t27 = createFromString<typename get_param_type<T27>::type>(s[27-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25, t26, t27 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -2466,35 +2472,35 @@ template<typename R, typename T1, typename T2, typename T3, typename T4, typenam
     untyped_ret = (void*) &ret;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=28) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
-    get_param_type<T19>::type t19 = createFromString<get_param_type<T19>::type>(s[19-1]);
-    get_param_type<T20>::type t20 = createFromString<get_param_type<T20>::type>(s[20-1]);
-    get_param_type<T21>::type t21 = createFromString<get_param_type<T21>::type>(s[21-1]);
-    get_param_type<T22>::type t22 = createFromString<get_param_type<T22>::type>(s[22-1]);
-    get_param_type<T23>::type t23 = createFromString<get_param_type<T23>::type>(s[23-1]);
-    get_param_type<T24>::type t24 = createFromString<get_param_type<T24>::type>(s[24-1]);
-    get_param_type<T25>::type t25 = createFromString<get_param_type<T25>::type>(s[25-1]);
-    get_param_type<T26>::type t26 = createFromString<get_param_type<T26>::type>(s[26-1]);
-    get_param_type<T27>::type t27 = createFromString<get_param_type<T27>::type>(s[27-1]);
-    get_param_type<T28>::type t28 = createFromString<get_param_type<T28>::type>(s[28-1]);
+    if(s.size() !=28) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
+    typename get_param_type<T19>::type t19 = createFromString<typename get_param_type<T19>::type>(s[19-1]);
+    typename get_param_type<T20>::type t20 = createFromString<typename get_param_type<T20>::type>(s[20-1]);
+    typename get_param_type<T21>::type t21 = createFromString<typename get_param_type<T21>::type>(s[21-1]);
+    typename get_param_type<T22>::type t22 = createFromString<typename get_param_type<T22>::type>(s[22-1]);
+    typename get_param_type<T23>::type t23 = createFromString<typename get_param_type<T23>::type>(s[23-1]);
+    typename get_param_type<T24>::type t24 = createFromString<typename get_param_type<T24>::type>(s[24-1]);
+    typename get_param_type<T25>::type t25 = createFromString<typename get_param_type<T25>::type>(s[25-1]);
+    typename get_param_type<T26>::type t26 = createFromString<typename get_param_type<T26>::type>(s[26-1]);
+    typename get_param_type<T27>::type t27 = createFromString<typename get_param_type<T27>::type>(s[27-1]);
+    typename get_param_type<T28>::type t28 = createFromString<typename get_param_type<T28>::type>(s[28-1]);
     ret = fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25, t26, t27, t28 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);
@@ -2537,35 +2543,35 @@ template<typename T1, typename T2, typename T3, typename T4, typename T5, typena
     untyped_ret = 0;
 } std::string Invoke( vector<string> s )
 {
-    if(s.size() !=28) throw exception( "FunctionInvoker: Wrong number of parameters!" );
-    get_param_type<T1>::type t1 = createFromString<get_param_type<T1>::type>(s[1-1]);
-    get_param_type<T2>::type t2 = createFromString<get_param_type<T2>::type>(s[2-1]);
-    get_param_type<T3>::type t3 = createFromString<get_param_type<T3>::type>(s[3-1]);
-    get_param_type<T4>::type t4 = createFromString<get_param_type<T4>::type>(s[4-1]);
-    get_param_type<T5>::type t5 = createFromString<get_param_type<T5>::type>(s[5-1]);
-    get_param_type<T6>::type t6 = createFromString<get_param_type<T6>::type>(s[6-1]);
-    get_param_type<T7>::type t7 = createFromString<get_param_type<T7>::type>(s[7-1]);
-    get_param_type<T8>::type t8 = createFromString<get_param_type<T8>::type>(s[8-1]);
-    get_param_type<T9>::type t9 = createFromString<get_param_type<T9>::type>(s[9-1]);
-    get_param_type<T10>::type t10 = createFromString<get_param_type<T10>::type>(s[10-1]);
-    get_param_type<T11>::type t11 = createFromString<get_param_type<T11>::type>(s[11-1]);
-    get_param_type<T12>::type t12 = createFromString<get_param_type<T12>::type>(s[12-1]);
-    get_param_type<T13>::type t13 = createFromString<get_param_type<T13>::type>(s[13-1]);
-    get_param_type<T14>::type t14 = createFromString<get_param_type<T14>::type>(s[14-1]);
-    get_param_type<T15>::type t15 = createFromString<get_param_type<T15>::type>(s[15-1]);
-    get_param_type<T16>::type t16 = createFromString<get_param_type<T16>::type>(s[16-1]);
-    get_param_type<T17>::type t17 = createFromString<get_param_type<T17>::type>(s[17-1]);
-    get_param_type<T18>::type t18 = createFromString<get_param_type<T18>::type>(s[18-1]);
-    get_param_type<T19>::type t19 = createFromString<get_param_type<T19>::type>(s[19-1]);
-    get_param_type<T20>::type t20 = createFromString<get_param_type<T20>::type>(s[20-1]);
-    get_param_type<T21>::type t21 = createFromString<get_param_type<T21>::type>(s[21-1]);
-    get_param_type<T22>::type t22 = createFromString<get_param_type<T22>::type>(s[22-1]);
-    get_param_type<T23>::type t23 = createFromString<get_param_type<T23>::type>(s[23-1]);
-    get_param_type<T24>::type t24 = createFromString<get_param_type<T24>::type>(s[24-1]);
-    get_param_type<T25>::type t25 = createFromString<get_param_type<T25>::type>(s[25-1]);
-    get_param_type<T26>::type t26 = createFromString<get_param_type<T26>::type>(s[26-1]);
-    get_param_type<T27>::type t27 = createFromString<get_param_type<T27>::type>(s[27-1]);
-    get_param_type<T28>::type t28 = createFromString<get_param_type<T28>::type>(s[28-1]);
+    if(s.size() !=28) throw wrong_number_of_parameters();
+    typename get_param_type<T1>::type t1 = createFromString<typename get_param_type<T1>::type>(s[1-1]);
+    typename get_param_type<T2>::type t2 = createFromString<typename get_param_type<T2>::type>(s[2-1]);
+    typename get_param_type<T3>::type t3 = createFromString<typename get_param_type<T3>::type>(s[3-1]);
+    typename get_param_type<T4>::type t4 = createFromString<typename get_param_type<T4>::type>(s[4-1]);
+    typename get_param_type<T5>::type t5 = createFromString<typename get_param_type<T5>::type>(s[5-1]);
+    typename get_param_type<T6>::type t6 = createFromString<typename get_param_type<T6>::type>(s[6-1]);
+    typename get_param_type<T7>::type t7 = createFromString<typename get_param_type<T7>::type>(s[7-1]);
+    typename get_param_type<T8>::type t8 = createFromString<typename get_param_type<T8>::type>(s[8-1]);
+    typename get_param_type<T9>::type t9 = createFromString<typename get_param_type<T9>::type>(s[9-1]);
+    typename get_param_type<T10>::type t10 = createFromString<typename get_param_type<T10>::type>(s[10-1]);
+    typename get_param_type<T11>::type t11 = createFromString<typename get_param_type<T11>::type>(s[11-1]);
+    typename get_param_type<T12>::type t12 = createFromString<typename get_param_type<T12>::type>(s[12-1]);
+    typename get_param_type<T13>::type t13 = createFromString<typename get_param_type<T13>::type>(s[13-1]);
+    typename get_param_type<T14>::type t14 = createFromString<typename get_param_type<T14>::type>(s[14-1]);
+    typename get_param_type<T15>::type t15 = createFromString<typename get_param_type<T15>::type>(s[15-1]);
+    typename get_param_type<T16>::type t16 = createFromString<typename get_param_type<T16>::type>(s[16-1]);
+    typename get_param_type<T17>::type t17 = createFromString<typename get_param_type<T17>::type>(s[17-1]);
+    typename get_param_type<T18>::type t18 = createFromString<typename get_param_type<T18>::type>(s[18-1]);
+    typename get_param_type<T19>::type t19 = createFromString<typename get_param_type<T19>::type>(s[19-1]);
+    typename get_param_type<T20>::type t20 = createFromString<typename get_param_type<T20>::type>(s[20-1]);
+    typename get_param_type<T21>::type t21 = createFromString<typename get_param_type<T21>::type>(s[21-1]);
+    typename get_param_type<T22>::type t22 = createFromString<typename get_param_type<T22>::type>(s[22-1]);
+    typename get_param_type<T23>::type t23 = createFromString<typename get_param_type<T23>::type>(s[23-1]);
+    typename get_param_type<T24>::type t24 = createFromString<typename get_param_type<T24>::type>(s[24-1]);
+    typename get_param_type<T25>::type t25 = createFromString<typename get_param_type<T25>::type>(s[25-1]);
+    typename get_param_type<T26>::type t26 = createFromString<typename get_param_type<T26>::type>(s[26-1]);
+    typename get_param_type<T27>::type t27 = createFromString<typename get_param_type<T27>::type>(s[27-1]);
+    typename get_param_type<T28>::type t28 = createFromString<typename get_param_type<T28>::type>(s[28-1]);
     fn( t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20, t21, t22, t23, t24, t25, t26, t27, t28 );
     cleanUp<T1>(t1);
     cleanUp<T2>(t2);

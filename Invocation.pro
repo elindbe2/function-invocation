@@ -2,12 +2,12 @@ TEMPLATE = app
 CONFIG += console
 CONFIG -= app_bundle
 CONFIG -= qt
+CONFIG += c++11
+
 
 SOURCES += \
-    FunctionInvoker.cpp \
     Invocable.cpp \
-    InvocationTest.cpp \
-    StreamOperatorOverloads.cpp
+    InvocationTest.cpp
 
 include(deployment.pri)
 qtcAddDeployment()
@@ -18,5 +18,6 @@ HEADERS += \
     InvokerHelperDefines.h \
     MethodInvoker.h \
     RepeatDefines.h \
-    StrategyInvocationHelpers.h
+    StrategyInvocationHelpers.h \
+    StringUtilities.hpp
 

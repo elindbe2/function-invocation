@@ -1,6 +1,8 @@
 #pragma once
 
-#include <Utilities/StringUtilities.hpp>
+#include "StringUtilities.hpp"
+#include <cstring>
+#include <type_traits>
 
 // this uses fromString by default but
 // you can specialize this template if you
@@ -16,7 +18,7 @@ template <> inline
 char * createFromString(std::string the_string)
 {
 	char * buf = new char[256];
-	strcpy_s( buf, 256, the_string.c_str() );
+    strcpy( buf, the_string.c_str() );
 	return buf;
 }
 
@@ -27,7 +29,7 @@ template<typename T> inline
 void delete_or_nop(T* p)  {delete p; p = NULL;}
 
 template<typename T> inline
-void delete_or_nop(const T* p) {/* NOP */ }
+void delete_or_nop(const T*) {/* NOP */ }
 
 template<> inline
 void delete_or_nop(char *p){ delete[] p; p = NULL; }
@@ -53,7 +55,7 @@ struct remove_pconst< const T >
 template <typename T>
 struct get_param_type
 {
-	typedef typename remove_pconst<typename std::remove_reference<T>::type>::type type;
+    typedef typename remove_pconst<typename std::remove_reference<T>::type>::type type;
 };
 
 // for variables created on the stack, this function
@@ -62,5 +64,5 @@ struct get_param_type
 template <typename T>
 void cleanUp(T var)
 {
-	delete_or_nop<std::remove_pointer<T>::type>(var);
+    delete_or_nop<typename std::remove_pointer<T>::type>(var);
 }

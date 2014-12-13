@@ -1,22 +1,9 @@
 #include "Invocable.h"
 #include <assert.h>
-#include "TwitchDefines.h"
-#include "Environment.h"
-#include "SaveInvocation.h"
 
 namespace Invocation
 {
 
-
-Invocable::Invocable( void* thisp, std::string table )
-{
-	STraderInfo info;
-	Environment::GetTraderInfo( info );
-	StartUpDB(info.dbHost, info.dbName, info.dbLogin, info.dbPassword, NULL );
-	
-	// Create the  table if it doesn't exist
-	CreateProxyFnLogTableIfNotExists( table.c_str() );
-}
 
 Invocable::Invocable()
 {
@@ -69,14 +56,9 @@ std::string Invocable::Invoke( string name, vector<string> args )
 	ss.clear();
 	for( auto arg : args )
 		ss << arg << " ";
-	LOG_INFO("INVOCATION: %s(%s)", name.c_str(), ss.str().c_str());
 
 	return fip->Invoke( args );
 }
-
-
-
-
 
 
 }
