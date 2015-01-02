@@ -61,11 +61,13 @@ public:
 
 	friend ostream& operator << ( ostream &os, const StreamClass& sc )
 	{
+        cout << "StreamClass operator << called." << endl;
 		return os << sc.value1 << "," << sc.value2 <<  "\002";
 	}
 
 	friend istream& operator >> ( istream &is, StreamClass& sc )
 	{
+        cout << "StreamClass operator >> called." << endl;
 		char c;
 		is >> sc.value1;
 		is >> c;
