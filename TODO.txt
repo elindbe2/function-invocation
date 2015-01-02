@@ -1,0 +1,4 @@
+* Add license
+* Write unit test
+* Add makefile and visual studio projects with unit test
+* Create master invocation object which stores a map of FunctionInvoker objects?
